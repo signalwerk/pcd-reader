@@ -120,20 +120,6 @@
   margin-top: 0.4em;
 }
 
-/* Destination */
-.destination-row {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 1em;
-  flex-wrap: wrap;
-}
-
-.destination-label {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.85em;
-}
-
 /* Actions */
 .actions {
   display: flex;

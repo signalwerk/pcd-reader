@@ -8,13 +8,7 @@ import {
   type PcdFormat,
   type WhiteBalance,
 } from "./lib/pcdCodec";
-import {
-  isFileSystemAccessSupported,
-  pickDestinationDirectory,
-  ensureWritePermission,
-  saveToDirectory,
-  downloadBlob,
-} from "./lib/fileSave";
+import { downloadBlob } from "./lib/fileSave";
 
 type QualityPreset = "standard" | "high" | "maximum" | "custom";
 
@@ -88,11 +82,8 @@ function App() {
 
   const [converting, setConverting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [globalError, setGlobalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fsAccessSupported = isFileSystemAccessSupported();
   const jpegQuality = qualityPreset === "custom" ? customQuality : QUALITY_MAP[qualityPreset];
 
   useEffect(() => {
@@ -170,7 +161,6 @@ function App() {
 
   const convertAll = useCallback(async () => {
     setConverting(true);
-    setGlobalError(null);
     const pending = files.filter((f) => f.status === "pending");
 
     for (const entry of pending) {
@@ -214,28 +204,19 @@ function App() {
     setConverting(false);
   }, [files, format, resolution, whiteBalance, monochrome, jpegQuality]);
 
-  const saveEntry = useCallback(
-    async (entry: FileEntry) => {
-      if (!entry.resultData || !entry.resultName || !entry.resultFormat) return;
-      try {
-        if (dirHandle) {
-          const granted = await ensureWritePermission(dirHandle);
-          if (!granted) throw new Error("Permission to write to the destination folder was denied");
-          await saveToDirectory(dirHandle, entry.resultName, entry.resultData);
-        } else {
-          downloadBlob(entry.resultName, entry.resultData, mimeTypeFor(entry.resultFormat));
-        }
-        setFiles((prev) => prev.map((f) => (f.id === entry.id ? { ...f, saved: true } : f)));
-      } catch (err) {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === entry.id ? { ...f, status: "error", error: `Save failed: ${String(err)}` } : f
-          )
-        );
-      }
-    },
-    [dirHandle]
-  );
+  const saveEntry = useCallback(async (entry: FileEntry) => {
+    if (!entry.resultData || !entry.resultName || !entry.resultFormat) return;
+    try {
+      downloadBlob(entry.resultName, entry.resultData, mimeTypeFor(entry.resultFormat));
+      setFiles((prev) => prev.map((f) => (f.id === entry.id ? { ...f, saved: true } : f)));
+    } catch (err) {
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === entry.id ? { ...f, status: "error", error: `Save failed: ${String(err)}` } : f
+        )
+      );
+    }
+  }, []);
 
   const saveAll = useCallback(async () => {
     const done = files.filter((f) => f.status === "done" && !f.saved);
@@ -243,15 +224,6 @@ function App() {
       await saveEntry(entry);
     }
   }, [files, saveEntry]);
-
-  const handlePickFolder = useCallback(async () => {
-    try {
-      const handle = await pickDestinationDirectory();
-      if (handle) setDirHandle(handle);
-    } catch (err) {
-      setGlobalError(String(err));
-    }
-  }, []);
 
   const clearAll = () => setFiles([]);
   const removeFile = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id));
@@ -320,8 +292,6 @@ function App() {
         JPEG or TIFF. Everything runs in your browser via WebAssembly — no files are uploaded
         anywhere.
       </p>
-
-      {globalError && <p className="error-banner">{globalError}</p>}
 
       {/* Drop Zone */}
       <div
@@ -407,45 +377,13 @@ function App() {
         </div>
       </div>
 
-      {/* Destination */}
-      <div className="settings">
-        <h2 style={{ marginBottom: "0.5em" }}>Destination</h2>
-        {fsAccessSupported ? (
-          <div className="destination-row">
-            <button className="btn" onClick={handlePickFolder}>
-              {dirHandle ? "Change folder…" : "Choose destination folder…"}
-            </button>
-            {dirHandle ? (
-              <span className="destination-label">
-                Saving to <strong>{dirHandle.name}</strong>
-              </span>
-            ) : (
-              <span className="destination-label small">
-                No folder chosen yet — files will download individually until you pick one.
-              </span>
-            )}
-            {dirHandle && (
-              <button className="btn" onClick={() => setDirHandle(null)}>
-                Use downloads instead
-              </button>
-            )}
-          </div>
-        ) : (
-          <p className="small">
-            Your browser doesn't support saving directly to a folder (this needs a Chromium-based
-            browser such as Chrome or Edge). Converted files will be downloaded individually
-            instead.
-          </p>
-        )}
-      </div>
-
       {/* Actions */}
       <div className="actions">
         <button className="btn btn--primary" disabled={pendingCount === 0 || converting} onClick={convertAll}>
           {converting ? "Converting…" : `Convert ${pendingCount} file${pendingCount !== 1 ? "s" : ""}`}
         </button>
         <button className="btn" disabled={unsavedDoneCount === 0} onClick={saveAll}>
-          {dirHandle ? `Save all (${unsavedDoneCount})` : `Download all (${unsavedDoneCount})`}
+          {`Download all (${unsavedDoneCount})`}
         </button>
         <button className="btn" disabled={totalCount === 0} onClick={clearAll}>
           Clear
@@ -495,7 +433,7 @@ function App() {
               <div className="file-item__actions">
                 {entry.status === "done" && !entry.saved && (
                   <button className="btn" onClick={() => saveEntry(entry)}>
-                    {dirHandle ? "Save" : "Download"}
+                    Download
                   </button>
                 )}
                 {(entry.status === "done" || entry.status === "error") && (
