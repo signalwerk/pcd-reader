@@ -1,0 +1,3 @@
+[submodule "vendor/pcdtojpeg"]
+	path = vendor/pcdtojpeg
+	url = https://github.com/signalwerk/pcdtojpeg.git

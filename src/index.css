@@ -1,0 +1,141 @@
+@import url("https://fonts.signalwerk.ch/css/latest/family=Work+Sans:ital,wght@0,100..900;1,100..900.css");
+@import url("https://fonts.signalwerk.ch/css/latest/family=IBM+Plex+Mono:ital,wght@0,400..700;1,400..700.css");
+@import url("https://fonts.signalwerk.ch/css/latest/family=Noto+Emoji:wght@300..700.css");
+
+:root {
+  --work-sans-weight-normal: 400;
+  --work-sans-weight-bold: 700;
+
+  --blue-color: #0054a2;
+  --gray-color: #e6e8ea;
+  --gray-dark-color: #c7c7c7;
+  --color-black: #121212;
+
+  --c-selection-bg: var(--blue-color);
+  --c-selection-color: var(--gray-color);
+
+  --layout-max-width: 48em;
+  --layout-padding-left-right: 1.5em;
+
+  --font-size--default: 14px;
+  --font-size--m: 15px;
+  --font-size--l: 16px;
+
+  font-size: var(--font-size--default);
+  height: 100%;
+  box-sizing: border-box;
+}
+
+@media screen and (min-width: 750px) {
+  :root {
+    font-size: var(--font-size--m);
+  }
+}
+
+@media screen and (min-width: 1100px) {
+  :root {
+    font-size: var(--font-size--l);
+  }
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+::selection {
+  color: var(--c-selection-color);
+  background: var(--c-selection-bg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Work Sans", "Noto Emoji", sans-serif;
+  font-weight: var(--work-sans-weight-normal);
+  line-height: 1.6;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-black);
+  background: #fff;
+}
+
+button {
+  color: inherit;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  text-shadow: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-block;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  margin-top: 1em;
+  margin-bottom: 0.2em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+h2 {
+  font-size: 1.3rem;
+}
+h3 {
+  font-size: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.3em;
+}
+
+input,
+select {
+  display: block;
+  padding: 0.5em;
+  margin: 0;
+  border: 1px solid var(--color-black);
+  background: #fff;
+  color: var(--color-black);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input[type="number"] {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+input[type="checkbox"] {
+  display: inline-block;
+  width: auto;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.small {
+  font-size: 0.8em;
+}

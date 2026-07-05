@@ -1,0 +1,271 @@
+.app {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 2em var(--layout-padding-left-right) 4em;
+}
+
+.app h1 {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+}
+
+.error-banner {
+  padding: 0.8em 1em;
+  margin-bottom: 1.5em;
+  border: 1px solid #c00;
+  color: #c00;
+  background: #fff4f4;
+}
+
+/* Drop Zone */
+.drop-zone {
+  border: 2px dashed var(--color-black);
+  padding: 3em 2em;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 200ms,
+    border-color 200ms;
+  margin-bottom: 2em;
+  position: relative;
+}
+
+.drop-zone:hover,
+.drop-zone--active {
+  background-color: var(--gray-color);
+  border-color: var(--blue-color);
+}
+
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-zone p {
+  pointer-events: none;
+}
+
+/* Settings */
+.settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2em;
+  margin-bottom: 2em;
+  padding: 1.5em;
+  border: 1px solid var(--color-black);
+}
+
+@media screen and (max-width: 500px) {
+  .settings {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings h2 {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+.setting-group label {
+  font-weight: 700;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5em;
+}
+
+.setting-group select,
+.setting-group input {
+  width: 100%;
+}
+
+.setting-group--checkbox {
+  display: flex;
+  align-items: end;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5em;
+  font-weight: 700;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0 !important;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+.quality-custom {
+  margin-top: 0.4em;
+}
+
+/* Destination */
+.destination-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  flex-wrap: wrap;
+}
+
+.destination-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85em;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 2em;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.7em 1.2em;
+  transition:
+    color 200ms,
+    background-color 200ms,
+    border-color 200ms;
+  color: inherit;
+  border: solid 1px var(--color-black);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--color-black);
+  color: #fff;
+}
+
+.btn--primary {
+  background-color: var(--color-black);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--blue-color);
+  border-color: var(--blue-color);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* File List */
+.file-list {
+  margin-top: 1.5em;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.8em 0;
+  border-bottom: 1px solid var(--gray-color);
+  flex-wrap: wrap;
+}
+
+.file-item:first-child {
+  border-top: 1px solid var(--gray-color);
+}
+
+.file-item__info {
+  flex: 1;
+  min-width: 14em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.file-item__name {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-item__size {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8em;
+  color: #666;
+  white-space: nowrap;
+}
+
+.file-item__warning {
+  font-size: 0.8em;
+  color: #a06a00;
+}
+
+.file-item__error-message {
+  font-size: 0.8em;
+  color: #c00;
+}
+
+.file-item__status {
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.file-item__status--pending {
+  color: #999;
+}
+
+.file-item__status--converting {
+  color: var(--blue-color);
+}
+
+.file-item__status--done {
+  color: #2a7a2a;
+}
+
+.file-item__status--error {
+  color: #c00;
+}
+
+.file-item__actions {
+  display: flex;
+  gap: 0.5em;
+  margin-left: auto;
+}
+
+.file-item__actions .btn {
+  font-size: 0.8em;
+  padding: 0.4em 0.8em;
+}
+
+/* Progress */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--gray-color);
+  margin-bottom: 1em;
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: var(--color-black);
+  transition: width 300ms ease;
+}
+
+/* Summary */
+.summary {
+  margin-top: 1em;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85em;
+  color: #666;
+}
