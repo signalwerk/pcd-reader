@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import "./App.css";
 import {
   convertPcd,
@@ -84,7 +91,8 @@ function App() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const jpegQuality = qualityPreset === "custom" ? customQuality : QUALITY_MAP[qualityPreset];
+  const jpegQuality =
+    qualityPreset === "custom" ? customQuality : QUALITY_MAP[qualityPreset];
 
   useEffect(() => {
     preloadPcdCodec()
@@ -96,7 +104,9 @@ function App() {
   // so users don't accidentally save a result made with stale settings.
   useEffect(() => {
     setFiles((prev) => {
-      const needsReset = prev.some((f) => f.status === "done" || f.status === "error");
+      const needsReset = prev.some(
+        (f) => f.status === "done" || f.status === "error",
+      );
       if (!needsReset) return prev;
       return prev.map((f) =>
         f.status === "done" || f.status === "error"
@@ -112,10 +122,17 @@ function App() {
               height: undefined,
               saved: false,
             }
-          : f
+          : f,
       );
     });
-  }, [format, qualityPreset, customQuality, resolution, whiteBalance, monochrome]);
+  }, [
+    format,
+    qualityPreset,
+    customQuality,
+    resolution,
+    whiteBalance,
+    monochrome,
+  ]);
 
   const addFiles = useCallback((fileList: FileList) => {
     const supported = Array.from(fileList).filter(isPcdFile);
@@ -136,7 +153,7 @@ function App() {
       setDragActive(false);
       if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
     },
-    [addFiles]
+    [addFiles],
   );
 
   const handleDragOver = useCallback((e: DragEvent) => {
@@ -156,7 +173,7 @@ function App() {
       if (e.target.files?.length) addFiles(e.target.files);
       e.target.value = "";
     },
-    [addFiles]
+    [addFiles],
   );
 
   const convertAll = useCallback(async () => {
@@ -164,7 +181,11 @@ function App() {
     const pending = files.filter((f) => f.status === "pending");
 
     for (const entry of pending) {
-      setFiles((prev) => prev.map((f) => (f.id === entry.id ? { ...f, status: "converting" } : f)));
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === entry.id ? { ...f, status: "converting" } : f,
+        ),
+      );
 
       try {
         const bytes = new Uint8Array(await entry.file.arrayBuffer());
@@ -191,12 +212,16 @@ function App() {
                   warning: result.warning ?? undefined,
                   saved: false,
                 }
-              : f
-          )
+              : f,
+          ),
         );
       } catch (err) {
         setFiles((prev) =>
-          prev.map((f) => (f.id === entry.id ? { ...f, status: "error", error: String(err) } : f))
+          prev.map((f) =>
+            f.id === entry.id
+              ? { ...f, status: "error", error: String(err) }
+              : f,
+          ),
         );
       }
     }
@@ -207,13 +232,21 @@ function App() {
   const saveEntry = useCallback(async (entry: FileEntry) => {
     if (!entry.resultData || !entry.resultName || !entry.resultFormat) return;
     try {
-      downloadBlob(entry.resultName, entry.resultData, mimeTypeFor(entry.resultFormat));
-      setFiles((prev) => prev.map((f) => (f.id === entry.id ? { ...f, saved: true } : f)));
+      downloadBlob(
+        entry.resultName,
+        entry.resultData,
+        mimeTypeFor(entry.resultFormat),
+      );
+      setFiles((prev) =>
+        prev.map((f) => (f.id === entry.id ? { ...f, saved: true } : f)),
+      );
     } catch (err) {
       setFiles((prev) =>
         prev.map((f) =>
-          f.id === entry.id ? { ...f, status: "error", error: `Save failed: ${String(err)}` } : f
-        )
+          f.id === entry.id
+            ? { ...f, status: "error", error: `Save failed: ${String(err)}` }
+            : f,
+        ),
       );
     }
   }, []);
@@ -226,7 +259,8 @@ function App() {
   }, [files, saveEntry]);
 
   const clearAll = () => setFiles([]);
-  const removeFile = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id));
+  const removeFile = (id: string) =>
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   const resetFile = (id: string) =>
     setFiles((prev) =>
       prev.map((f) =>
@@ -243,15 +277,18 @@ function App() {
               height: undefined,
               saved: false,
             }
-          : f
-      )
+          : f,
+      ),
     );
 
   const pendingCount = files.filter((f) => f.status === "pending").length;
   const doneCount = files.filter((f) => f.status === "done").length;
-  const unsavedDoneCount = files.filter((f) => f.status === "done" && !f.saved).length;
+  const unsavedDoneCount = files.filter(
+    (f) => f.status === "done" && !f.saved,
+  ).length;
   const totalCount = files.length;
-  const progress = totalCount > 0 ? ((totalCount - pendingCount) / totalCount) * 100 : 0;
+  const progress =
+    totalCount > 0 ? ((totalCount - pendingCount) / totalCount) * 100 : 0;
 
   // Shown once above the file list rather than repeated on every row -- the
   // common case (defaulting to 64Base) triggers the same warning for every
@@ -260,15 +297,17 @@ function App() {
     new Set(
       files
         .filter((f) => f.status === "done" && f.warning)
-        .map((f) => explainWarning(f.warning as string))
-    )
+        .map((f) => explainWarning(f.warning as string)),
+    ),
   );
 
   if (loadError) {
     return (
       <div className="app">
         <h1>PCD Converter</h1>
-        <p className="error-banner">Failed to load the conversion engine: {loadError}</p>
+        <p className="error-banner">
+          Failed to load the conversion engine: {loadError}
+        </p>
       </div>
     );
   }
@@ -277,9 +316,18 @@ function App() {
     return (
       <div
         className="app"
-        style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
       >
-        <p style={{ fontSize: "1.2rem", fontFamily: "IBM Plex Mono, monospace" }}>Loading engine…</p>
+        <p
+          style={{ fontSize: "1.2rem", fontFamily: "IBM Plex Mono, monospace" }}
+        >
+          Loading engine…
+        </p>
       </div>
     );
   }
@@ -288,9 +336,9 @@ function App() {
     <div className="app">
       <h1>Photo CD (PCD) → {format === "jpeg" ? "JPEG" : "TIFF"}</h1>
       <p style={{ marginBottom: "1.5em" }}>
-        Drop your Kodak Photo CD (.pcd) files below to convert them to a color-managed, ICC-tagged
-        JPEG or TIFF. Everything runs in your browser via WebAssembly — no files are uploaded
-        anywhere.
+        Drop your Kodak Photo CD (.pcd) files below to convert them to a
+        color-managed, ICC-tagged JPEG or TIFF. Everything runs in your browser
+        via WebAssembly — no files are uploaded anywhere.
       </p>
 
       {/* Drop Zone */}
@@ -300,7 +348,13 @@ function App() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        <input ref={fileInputRef} type="file" accept=".pcd" multiple onChange={handleFileInput} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pcd"
+          multiple
+          onChange={handleFileInput}
+        />
         <p>
           <strong>Drop .PCD files here</strong>
           <br />
@@ -314,7 +368,11 @@ function App() {
 
         <div className="setting-group">
           <label htmlFor="format">Output Format</label>
-          <select id="format" value={format} onChange={(e) => setFormat(e.target.value as PcdFormat)}>
+          <select
+            id="format"
+            value={format}
+            onChange={(e) => setFormat(e.target.value as PcdFormat)}
+          >
             <option value="jpeg">JPEG</option>
             <option value="tiff">TIFF (ZIP compressed)</option>
           </select>
@@ -322,7 +380,11 @@ function App() {
 
         <div className="setting-group">
           <label htmlFor="resolution">Resolution</label>
-          <select id="resolution" value={resolution} onChange={(e) => setResolution(Number(e.target.value))}>
+          <select
+            id="resolution"
+            value={resolution}
+            onChange={(e) => setResolution(Number(e.target.value))}
+          >
             {PCD_RESOLUTIONS.map((r) => (
               <option key={r.value} value={r.value}>
                 {r.label}
@@ -334,7 +396,13 @@ function App() {
         {format === "jpeg" && (
           <div className="setting-group">
             <label htmlFor="quality">JPEG Quality</label>
-            <select id="quality" value={qualityPreset} onChange={(e) => setQualityPreset(e.target.value as QualityPreset)}>
+            <select
+              id="quality"
+              value={qualityPreset}
+              onChange={(e) =>
+                setQualityPreset(e.target.value as QualityPreset)
+              }
+            >
               <option value="standard">Standard (85%)</option>
               <option value="high">High (95%)</option>
               <option value="maximum">Maximum (100%)</option>
@@ -347,7 +415,11 @@ function App() {
                   min={1}
                   max={100}
                   value={customQuality}
-                  onChange={(e) => setCustomQuality(Math.max(1, Math.min(100, Number(e.target.value))))}
+                  onChange={(e) =>
+                    setCustomQuality(
+                      Math.max(1, Math.min(100, Number(e.target.value))),
+                    )
+                  }
                   style={{ display: "inline-block", width: "5em" }}
                 />
                 <span style={{ marginLeft: "0.4em" }}>%</span>
@@ -358,7 +430,11 @@ function App() {
 
         <div className="setting-group">
           <label htmlFor="whiteBalance">White Balance</label>
-          <select id="whiteBalance" value={whiteBalance} onChange={(e) => setWhiteBalance(e.target.value as WhiteBalance)}>
+          <select
+            id="whiteBalance"
+            value={whiteBalance}
+            onChange={(e) => setWhiteBalance(e.target.value as WhiteBalance)}
+          >
             <option value="D65">D65 — 6500K (standard PhotoCD scan)</option>
             <option value="D50">D50 — 5000K</option>
           </select>
@@ -379,10 +455,20 @@ function App() {
 
       {/* Actions */}
       <div className="actions">
-        <button className="btn btn--primary" disabled={pendingCount === 0 || converting} onClick={convertAll}>
-          {converting ? "Converting…" : `Convert ${pendingCount} file${pendingCount !== 1 ? "s" : ""}`}
+        <button
+          className="btn btn--primary"
+          disabled={pendingCount === 0 || converting}
+          onClick={convertAll}
+        >
+          {converting
+            ? "Converting…"
+            : `Convert ${pendingCount} file${pendingCount !== 1 ? "s" : ""}`}
         </button>
-        <button className="btn" disabled={unsavedDoneCount === 0} onClick={saveAll}>
+        <button
+          className="btn"
+          disabled={unsavedDoneCount === 0}
+          onClick={saveAll}
+        >
           {`Download all (${unsavedDoneCount})`}
         </button>
         <button className="btn" disabled={totalCount === 0} onClick={clearAll}>
@@ -393,7 +479,10 @@ function App() {
       {/* Progress */}
       {converting && (
         <div className="progress-bar">
-          <div className="progress-bar__fill" style={{ width: `${progress}%` }} />
+          <div
+            className="progress-bar__fill"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       )}
 
@@ -417,16 +506,26 @@ function App() {
                 </span>
                 <span className="file-item__size">
                   {formatBytes(entry.size)}
-                  {entry.width && entry.height ? ` · ${entry.width}×${entry.height}` : ""}
+                  {entry.width && entry.height
+                    ? ` · ${entry.width}×${entry.height}`
+                    : ""}
                 </span>
-                {entry.status === "error" && <span className="file-item__error-message">{entry.error}</span>}
+                {entry.status === "error" && (
+                  <span className="file-item__error-message">
+                    {entry.error}
+                  </span>
+                )}
               </div>
-              <span className={`file-item__status file-item__status--${entry.status}`}>
+              <span
+                className={`file-item__status file-item__status--${entry.status}`}
+              >
                 {entry.status === "pending" && "Pending"}
                 {entry.status === "converting" && "Converting…"}
                 {entry.status === "done" &&
                   `${entry.saved ? "✓ Saved" : "✓ Converted"}${
-                    entry.resultData ? ` (${formatBytes(entry.resultData.length)})` : ""
+                    entry.resultData
+                      ? ` (${formatBytes(entry.resultData.length)})`
+                      : ""
                   }`}
                 {entry.status === "error" && "✗ Error"}
               </span>
@@ -437,7 +536,11 @@ function App() {
                   </button>
                 )}
                 {(entry.status === "done" || entry.status === "error") && (
-                  <button className="btn" onClick={() => resetFile(entry.id)} title="Reset to pending">
+                  <button
+                    className="btn"
+                    onClick={() => resetFile(entry.id)}
+                    title="Reset to pending"
+                  >
                     Reset
                   </button>
                 )}
@@ -453,16 +556,25 @@ function App() {
       {/* Summary */}
       {files.length > 0 && (
         <div className="summary">
-          {totalCount} file{totalCount !== 1 ? "s" : ""} · {doneCount} converted · {pendingCount} pending
+          {totalCount} file{totalCount !== 1 ? "s" : ""} · {doneCount} converted
+          · {pendingCount} pending
         </div>
       )}
 
       <footer className="app-footer">
-        <a href="https://github.com/signalwerk/pcd-reader" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://github.com/signalwerk/pcd-reader"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Source code
         </a>
         <span className="app-footer__sep">·</span>
-        <a href="https://sourceforge.net/projects/pcdtojpeg/" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://sourceforge.net/projects/pcdtojpeg/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           pcdtojpeg library
         </a>
       </footer>

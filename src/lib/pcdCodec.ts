@@ -15,7 +15,11 @@ export const PCD_RESOLUTIONS = [
   { value: 2, label: "Base — 512 × 768 (screen)" },
   { value: 3, label: "4Base — 1024 × 1536 (HD)" },
   { value: 4, label: "16Base — 2048 × 3072 (print)" },
-  { value: 5, label: "64Base — 4096 × 6144 (needs an Overview Pac file; falls back if unavailable)" },
+  {
+    value: 5,
+    label:
+      "64Base — 4096 × 6144 (needs an Overview Pac file; falls back if unavailable)",
+  },
 ] as const;
 
 // 64Base is the highest resolution PhotoCD supports. A standalone .pcd file
@@ -52,7 +56,7 @@ interface PcdCodecModule {
     name: string,
     returnType: string,
     argTypes: string[],
-    args: (string | number)[]
+    args: (string | number)[],
   ): number;
   _malloc(size: number): number;
   _free(ptr: number): void;
@@ -81,13 +85,14 @@ const WHITE_BALANCE_CODES: Record<WhiteBalance, number> = { D65: 0, D50: 1 };
 
 export async function convertPcd(
   fileBytes: Uint8Array,
-  options: ConvertOptions
+  options: ConvertOptions,
 ): Promise<ConvertResult> {
   const Module = await getModule();
 
   const callId = callCounter++;
   const inPath = `/in-${callId}.pcd`;
-  const outPath = options.format === "tiff" ? `/out-${callId}.tif` : `/out-${callId}.jpg`;
+  const outPath =
+    options.format === "tiff" ? `/out-${callId}.tif` : `/out-${callId}.jpg`;
 
   const outWidthPtr = Module._malloc(4);
   const outHeightPtr = Module._malloc(4);
@@ -125,7 +130,7 @@ export async function convertPcd(
         outHeightPtr,
         messagePtr,
         messageBufLen,
-      ]
+      ],
     );
 
     const width = Module.getValue(outWidthPtr, "i32");
@@ -138,7 +143,12 @@ export async function convertPcd(
 
     const data = Module.FS.readFile(outPath, { encoding: "binary" });
     // Copy out of the module's MEMFS-backed buffer before we unlink/reuse it.
-    return { data: new Uint8Array(data), width, height, warning: message || null };
+    return {
+      data: new Uint8Array(data),
+      width,
+      height,
+      warning: message || null,
+    };
   } finally {
     Module._free(outWidthPtr);
     Module._free(outHeightPtr);

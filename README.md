@@ -13,8 +13,11 @@ No files are ever uploaded — decoding and encoding happen locally.
   reproduction in any color-managed viewer.
 - TIFF output uses ZIP (Adobe Deflate) compression with a horizontal
   differencing predictor.
-- Save results directly to a folder via the File System Access API
-  (Chromium browsers), or fall back to per-file downloads everywhere else.
+- Metadata read from the `.pcd` (scan date, scanner make/model, copyright
+  status, film/medium/photofinisher info) is embedded as TIFF tags / an Exif
+  APP1 segment in the output — see "Metadata (EXIF/TIFF tags)" below.
+- Converted files are downloaded individually (there's no folder-picker; the
+  app just triggers a browser download per file).
 - Progress indicator; a single deduplicated notice for any decoder warnings
   (shown once above the file list, not repeated per file) plus per-file error
   reporting.
@@ -22,14 +25,16 @@ No files are ever uploaded — decoding and encoding happen locally.
 ## Architecture
 
 ```
-native/            our C++ WASM bridge: bridge.cpp, jpeg_writer.cpp, tiff_writer.cpp
+native/            our C++ WASM bridge: bridge.cpp, jpeg_writer.cpp, tiff_writer.cpp,
+                    image_metadata.{h,cpp} (PCD -> EXIF/TIFF tag mapping), tiff_bytes.h
+                    (shared little-endian/IFD byte-packing helpers)
 vendor/pcdtojpeg/   git submodule: the vendored PhotoCD decoder (pcdDecode.{h,cpp})
 scripts/            build-wasm.mjs (emcc build), test-wasm.mjs (Node smoke test)
 src/                the React + TypeScript app
   lib/pcdCodec.ts    JS <-> WASM bridge (Emscripten MEMFS in/out)
-  lib/fileSave.ts    File System Access API + download fallback
+  lib/fileSave.ts    triggers a browser download for the converted file
   wasm/              generated: pcd-codec.mjs / pcd-codec.wasm (gitignored)
-test/               sample .PCD files for manual/automated testing
+test/               sample .PCD files for manual/automated testing (gitignored - see Testing)
 ```
 
 The only PhotoCD decoding logic is the vendored
@@ -49,6 +54,39 @@ Both encoders embed the classic HP/Microsoft "sRGB IEC61966-2.1" ICC profile
 > [`signalwerk/pcdtojpeg`](https://github.com/signalwerk/pcdtojpeg), a git
 > mirror of that same release. The vendored source is kept pristine —
 > unmodified — see the 64Base note below for why.
+
+### Metadata (EXIF/TIFF tags)
+
+`native/src/image_metadata.cpp` reads the vendored decoder's
+`getMetadata()`/`digitisationTime()` fields (see `PCDMetaDataDictionary` in
+`vendor/pcdtojpeg/src/pcdDecode.h` for the full set it exposes) and maps the
+ones with a natural standard-tag home onto IFD0 tags written by both
+encoders:
+
+| PCD field                                                    | Tag                                 |
+| ------------------------------------------------------------ | ----------------------------------- |
+| Scan date (`digitisationTime`)                               | `DateTime` (306)                    |
+| Scanner vendor                                               | `Make` (271)                        |
+| Scanner product                                              | `Model` (272)                       |
+| Copyright status (only if flagged)                           | `Copyright` (33432)                 |
+| Medium, film, product, photofinisher, equipment manufacturer | `ImageDescription` (270), free text |
+
+Fields the source `.pcd` doesn't carry are omitted entirely (no placeholder
+tag). Values are also rejected if they contain non-printable bytes — some
+discs (e.g. Kodak's own `REFIMAGE.PCD` reference disc) leave a field as raw
+`0xFF` filler that slips past the vendor library's own charset guard, and
+TIFF/Exif ASCII tags are only valid as printable text.
+
+- **TIFF** already hand-writes its own IFD in `tiff_writer.cpp`, so these are
+  just more entries in the same structure.
+- **JPEG** has no native tag support via libjpeg, so `jpeg_writer.cpp` builds
+  a standalone Exif APP1 segment (`"Exif\0\0"` + a miniature self-contained
+  TIFF/IFD0) and injects it via `jpeg_write_marker`, ahead of the ICC profile
+  marker — the same ordering Photoshop-style JPEGs use.
+- `tiff_bytes.h` holds the shared little-endian/IFD-entry byte-packing
+  helpers both writers use for this.
+
+Verify with `exiftool -a -G1 <file>` — look for the `IFD0` group.
 
 ## Setup
 
@@ -82,11 +120,12 @@ dimensions, output sizes, and any decoder warnings. Verify output validity
 with `exiftool` / ImageMagick's `identify`, e.g.:
 
 ```sh
-exiftool .wasm-test-out/IMG0002.tif   # Compression: Adobe Deflate, Predictor: Horizontal differencing, embedded ICC profile
+exiftool -a -G1 .wasm-test-out/IMG0002.tif   # Compression: Adobe Deflate, Predictor: Horizontal differencing,
+                                              # embedded ICC profile, IFD0 Make/Model/DateTime/ImageDescription
 ```
 
 For UI changes, `npm run build && npx vite preview` and drive it in a real
-browser (drop a file from `test/`, convert, save/download).
+browser (drop a file from `test/`, convert, download).
 
 ## Deployment
 
@@ -98,13 +137,6 @@ the build needs Emscripten, the workflow installs it with
 running `npm run build`, and checks out `vendor/pcdtojpeg` with
 `submodules: recursive`. The repo's **Settings → Pages → Source** must be set
 to "GitHub Actions" (usually a one-time step the first time Pages is enabled).
-
-## Browser support
-
-Saving straight to a folder needs the File System Access API
-(`showDirectoryPicker`), currently Chromium-only (Chrome, Edge, etc.). On any
-other browser the app automatically falls back to triggering a normal
-download per file.
 
 ## Notes / possible follow-ups
 
