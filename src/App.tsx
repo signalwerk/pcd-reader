@@ -62,6 +62,16 @@ function isPcdFile(file: File): boolean {
   return file.name.toLowerCase().endsWith(".pcd");
 }
 
+// Translates the decoder's raw warning text into something a non-technical
+// user can act on. Falls back to the raw message for anything unexpected
+// (e.g. genuine data-recovery warnings) so nothing gets silently swallowed.
+function explainWarning(raw: string): string {
+  if (/ipe|64base/i.test(raw)) {
+    return "The highest Photo CD resolution, 64Base, requires a separate IMAGE PAC Extension (IPE). This extension is only present on Photo CD Pro Master discs and is not included in standalone .pcd files. The converter has automatically fallen back to the next-best resolution, 16Base (1024×1536).";
+  }
+  return raw;
+}
+
 let idCounter = 0;
 
 function App() {
@@ -69,7 +79,7 @@ function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [files, setFiles] = useState<FileEntry[]>([]);
 
-  const [format, setFormat] = useState<PcdFormat>("jpeg");
+  const [format, setFormat] = useState<PcdFormat>("tiff");
   const [qualityPreset, setQualityPreset] = useState<QualityPreset>("maximum");
   const [customQuality, setCustomQuality] = useState(90);
   const [resolution, setResolution] = useState(DEFAULT_RESOLUTION);
@@ -271,6 +281,17 @@ function App() {
   const totalCount = files.length;
   const progress = totalCount > 0 ? ((totalCount - pendingCount) / totalCount) * 100 : 0;
 
+  // Shown once above the file list rather than repeated on every row -- the
+  // common case (defaulting to 64Base) triggers the same warning for every
+  // file converted from a standalone .pcd.
+  const uniqueWarnings = Array.from(
+    new Set(
+      files
+        .filter((f) => f.status === "done" && f.warning)
+        .map((f) => explainWarning(f.warning as string))
+    )
+  );
+
   if (loadError) {
     return (
       <div className="app">
@@ -438,6 +459,15 @@ function App() {
         </div>
       )}
 
+      {/* Notices: shown once, deduplicated, rather than repeated per file */}
+      {uniqueWarnings.length > 0 && (
+        <div className="notice-banner">
+          {uniqueWarnings.map((w, i) => (
+            <p key={i}>ℹ️ {w}</p>
+          ))}
+        </div>
+      )}
+
       {/* File List */}
       {files.length > 0 && (
         <div className="file-list">
@@ -451,7 +481,6 @@ function App() {
                   {formatBytes(entry.size)}
                   {entry.width && entry.height ? ` · ${entry.width}×${entry.height}` : ""}
                 </span>
-                {entry.warning && <span className="file-item__warning">{entry.warning}</span>}
                 {entry.status === "error" && <span className="file-item__error-message">{entry.error}</span>}
               </div>
               <span className={`file-item__status file-item__status--${entry.status}`}>
@@ -489,6 +518,16 @@ function App() {
           {totalCount} file{totalCount !== 1 ? "s" : ""} · {doneCount} converted · {pendingCount} pending
         </div>
       )}
+
+      <footer className="app-footer">
+        <a href="https://github.com/signalwerk/pcd-reader" target="_blank" rel="noopener noreferrer">
+          Source code
+        </a>
+        <span className="app-footer__sep">·</span>
+        <a href="https://sourceforge.net/projects/pcdtojpeg/" target="_blank" rel="noopener noreferrer">
+          pcdtojpeg library
+        </a>
+      </footer>
     </div>
   );
 }

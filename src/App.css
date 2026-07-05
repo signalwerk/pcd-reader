@@ -17,6 +17,18 @@
   background: #fff4f4;
 }
 
+.notice-banner {
+  padding: 0.6em 1em;
+  margin-bottom: 1em;
+  border: 1px solid var(--gray-dark-color);
+  background: var(--gray-color);
+  font-size: 0.85em;
+}
+
+.notice-banner p + p {
+  margin-top: 0.3em;
+}
+
 /* Drop Zone */
 .drop-zone {
   border: 2px dashed var(--color-black);
@@ -205,11 +217,6 @@
   white-space: nowrap;
 }
 
-.file-item__warning {
-  font-size: 0.8em;
-  color: #a06a00;
-}
-
 .file-item__error-message {
   font-size: 0.8em;
   color: #c00;
@@ -268,4 +275,21 @@
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.85em;
   color: #666;
+}
+
+/* Footer */
+.app-footer {
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid var(--gray-color);
+  font-size: 0.8em;
+  color: #666;
+}
+
+.app-footer a {
+  color: inherit;
+}
+
+.app-footer__sep {
+  margin: 0 0.5em;
 }

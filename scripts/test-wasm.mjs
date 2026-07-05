@@ -20,7 +20,10 @@ const Module = await createPcdCodecModule();
 
 const FORMAT_JPEG = 0;
 const FORMAT_TIFF = 1;
-const RESOLUTION_16BASE = 4;
+// 64Base: exercises the same "no Overview Pac file supplied" fallback path
+// the app hits by default (see native/src/bridge.cpp, which always passes
+// ipe_file=NULL).
+const RESOLUTION_64BASE = 5;
 const WHITE_BALANCE_D65 = 0;
 
 function convert(pcdBytes, format, quality) {
@@ -36,7 +39,7 @@ function convert(pcdBytes, format, quality) {
     "pcd_convert",
     "number",
     ["string", "string", "number", "number", "number", "number", "number", "number", "number", "number", "number"],
-    ["/in.pcd", outPath, format, RESOLUTION_16BASE, WHITE_BALANCE_D65, 0, quality, outWidthPtr, outHeightPtr, msgPtr, msgLen]
+    ["/in.pcd", outPath, format, RESOLUTION_64BASE, WHITE_BALANCE_D65, 0, quality, outWidthPtr, outHeightPtr, msgPtr, msgLen]
   );
 
   const width = Module.getValue(outWidthPtr, "i32");

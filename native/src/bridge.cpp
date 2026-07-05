@@ -50,6 +50,16 @@ int pcd_convert(const char *inPath, const char *outPath, int format, int resolut
   if (resolution < 0) resolution = 0;
   if (resolution > k64Base) resolution = k64Base;
 
+  // 64Base is stored as a separate Overview Pac (IPE) file alongside the base
+  // Image Pac on the original disc; this app only ever has the single .pcd
+  // file the user selected, so we never have that companion file to pass in.
+  // Clamp the request here rather than asking pcdDecode::parseFile for
+  // k64Base with ipe_file=NULL: its internal parseICFile() indexes into the
+  // (absent) filename unconditionally whenever the requested resolution
+  // reaches k64Base, which is only safe because we sidestep it entirely.
+  const bool wanted64Base = resolution >= k64Base;
+  if (wanted64Base) resolution = k16Base;
+
   pcdDecode decoder;
   decoder.setInterpolation(kUpResLumaIterpolate); // falls back automatically in the GPL build
   decoder.setColorSpace(kPCDsRGBColorSpace);
@@ -57,7 +67,15 @@ int pcd_convert(const char *inPath, const char *outPath, int format, int resolut
   decoder.setIsMonoChrome(monochrome != 0);
 
   const bool parsed = decoder.parseFile(inPath, nullptr, static_cast<unsigned int>(resolution));
-  copyToBuffer(decoder.getErrorString(), messageBuf, messageBufLen);
+  const std::string decoderMessage = decoder.getErrorString();
+  if (wanted64Base && decoderMessage.empty()) {
+    copyToBuffer(
+        "64Base (Photo CD's highest resolution) needs a separate Overview Pac file that a "
+        "standalone .pcd doesn't include; decoded at 16Base instead.",
+        messageBuf, messageBufLen);
+  } else {
+    copyToBuffer(decoderMessage, messageBuf, messageBufLen);
+  }
   if (!parsed) {
     return -1;
   }

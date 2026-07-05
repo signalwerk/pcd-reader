@@ -18,7 +18,13 @@ export const PCD_RESOLUTIONS = [
   { value: 5, label: "64Base — 4096 × 6144 (needs an Overview Pac file; falls back if unavailable)" },
 ] as const;
 
-export const DEFAULT_RESOLUTION = 4; // 16Base: the highest resolution a standalone Image Pac file carries
+// 64Base is the highest resolution PhotoCD supports. A standalone .pcd file
+// never actually carries 64Base data on its own (that needs a companion
+// Overview Pac file this app doesn't ask for) - so this always falls back to
+// the best resolution actually available in the file, reported as a warning
+// rather than an error. Defaulting to it means every conversion always gets
+// the maximum quality the source file can provide.
+export const DEFAULT_RESOLUTION = 5;
 
 export interface ConvertOptions {
   format: PcdFormat;

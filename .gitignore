@@ -13,3 +13,4 @@ src/wasm/pcd-codec.wasm
 
 .DS_Store
 *.log
+/test
