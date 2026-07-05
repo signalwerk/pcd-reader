@@ -67,7 +67,7 @@ function isPcdFile(file: File): boolean {
 // (e.g. genuine data-recovery warnings) so nothing gets silently swallowed.
 function explainWarning(raw: string): string {
   if (/ipe|64base/i.test(raw)) {
-    return "The highest Photo CD resolution, 64Base, requires a separate IMAGE PAC Extension (IPE). This extension is only present on Photo CD Pro Master discs and is not included in standalone .pcd files. The converter has automatically fallen back to the next-best resolution, 16Base (1024×1536).";
+    return "The highest Photo CD resolution, 64Base, requires a separate IMAGE PAC Extension (IPE). This extension is only present on Photo CD Pro Master discs and is not included in standalone .pcd files. The converter has automatically fallen back to the next-best resolution, 16Base (2048 × 3072).";
   }
   return raw;
 }

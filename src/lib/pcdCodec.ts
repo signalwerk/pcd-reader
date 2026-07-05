@@ -10,12 +10,12 @@ export type WhiteBalance = "D65" | "D50";
 
 // Mirrors enum PCDResolutions in vendor/pcdtojpeg/src/pcdDecode.h
 export const PCD_RESOLUTIONS = [
-  { value: 0, label: "Base/16 — 128 × 192 (thumbnail)" },
-  { value: 1, label: "Base/4 — 256 × 384 (web)" },
-  { value: 2, label: "Base — 512 × 768 (screen)" },
-  { value: 3, label: "4Base — 1024 × 1536 (HD)" },
-  { value: 4, label: "16Base — 2048 × 3072 (print)" },
-  { value: 5, label: "64Base — 4096 × 6144 (needs an Overview Pac file; falls back if unavailable)" },
+  { value: 0, label: "Base/16 — 128 × 192 (thumbnail)" },
+  { value: 1, label: "Base/4 — 256 × 384 (web)" },
+  { value: 2, label: "Base — 512 × 768 (screen)" },
+  { value: 3, label: "4Base — 1024 × 1536 (HD)" },
+  { value: 4, label: "16Base — 2048 × 3072 (print)" },
+  { value: 5, label: "64Base — 4096 × 6144 (needs an Overview Pac file; falls back if unavailable)" },
 ] as const;
 
 // 64Base is the highest resolution PhotoCD supports. A standalone .pcd file
