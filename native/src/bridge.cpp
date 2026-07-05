@@ -17,6 +17,7 @@
 
 #include "pcdDecode.h"
 
+#include "image_metadata.h"
 #include "jpeg_writer.h"
 #include "tiff_writer.h"
 
@@ -98,15 +99,17 @@ int pcd_convert(const char *inPath, const char *outPath, int format, int resolut
   if (outWidth) *outWidth = static_cast<int>(width);
   if (outHeight) *outHeight = static_cast<int>(height);
 
+  const ImageMetadata metadata = extractImageMetadata(decoder);
+
   std::string encodeError;
   bool encodeOk = false;
   if (format == kFormatTiff) {
     encodeOk = writeTiffFile(outPath, pixels, static_cast<int>(width), static_cast<int>(height),
-                              encodeError);
+                              metadata, encodeError);
   } else {
     const int quality = jpegQuality > 0 && jpegQuality <= 100 ? jpegQuality : 92;
     encodeOk = writeJpegFile(outPath, quality, pixels, static_cast<int>(width),
-                              static_cast<int>(height), encodeError);
+                              static_cast<int>(height), metadata, encodeError);
   }
 
   if (!encodeOk) {

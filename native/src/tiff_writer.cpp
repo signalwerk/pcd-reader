@@ -9,52 +9,16 @@
 
 #include "tiff_writer.h"
 #include "icc_srgb.h"
+#include "tiff_bytes.h"
 
 #include <cstdio>
 #include <vector>
 
 #include <zlib.h>
 
+using namespace tiffbytes;
+
 namespace {
-
-void appendU8(std::vector<uint8_t> &out, uint8_t v) { out.push_back(v); }
-
-void appendU16LE(std::vector<uint8_t> &out, uint16_t v) {
-  out.push_back(static_cast<uint8_t>(v & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 8) & 0xff));
-}
-
-void appendU32LE(std::vector<uint8_t> &out, uint32_t v) {
-  out.push_back(static_cast<uint8_t>(v & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 8) & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 16) & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 24) & 0xff));
-}
-
-void appendBytes(std::vector<uint8_t> &out, const uint8_t *data, size_t len) {
-  out.insert(out.end(), data, data + len);
-}
-
-void padToEven(std::vector<uint8_t> &out) {
-  if (out.size() % 2 != 0) out.push_back(0);
-}
-
-// A single 12-byte IFD entry: tag, field type, value count, and either the
-// value itself (if it fits in 4 bytes) or an offset to it (patched below).
-void writeIfdEntry(std::vector<uint8_t> &out, uint16_t tag, uint16_t type,
-                    uint32_t count, uint32_t valueOrOffset) {
-  appendU16LE(out, tag);
-  appendU16LE(out, type);
-  appendU32LE(out, count);
-  appendU32LE(out, valueOrOffset);
-}
-
-// TIFF field types we use.
-constexpr uint16_t kTypeAscii = 2;
-constexpr uint16_t kTypeShort = 3;
-constexpr uint16_t kTypeLong = 4;
-constexpr uint16_t kTypeRational = 5;
-constexpr uint16_t kTypeUndefined = 7;
 
 // Applies the TIFF "horizontal differencing" predictor in place, per row,
 // across interleaved RGB samples (stride 3). Must run before compression;
@@ -84,7 +48,7 @@ bool deflateBuffer(const std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
 } // namespace
 
 bool writeTiffFile(const std::string &outPath, const uint8_t *rgb, int width, int height,
-                    std::string &errorOut) {
+                    const ImageMetadata &metadata, std::string &errorOut) {
   const size_t pixelBytes = static_cast<size_t>(width) * height * 3;
 
   std::vector<uint8_t> predicted(rgb, rgb + pixelBytes);
@@ -142,6 +106,28 @@ bool writeTiffFile(const std::string &outPath, const uint8_t *rgb, int width, in
   appendBytes(out, kIccSRGBProfile, kIccSRGBProfileLen);
   padToEven(out);
 
+  // --- Optional PCD-sourced metadata strings (only those the source .pcd
+  // actually carried; see extractImageMetadata) ---
+  size_t imageDescriptionOffset = 0, imageDescriptionLen = 0;
+  size_t makeOffset = 0, makeLen = 0;
+  size_t modelOffset = 0, modelLen = 0;
+  size_t dateTimeOffset = 0, dateTimeLen = 0;
+  size_t copyrightOffset = 0, copyrightLen = 0;
+
+  auto writeAsciiField = [&out](const std::string &s, size_t &offset, size_t &len) {
+    offset = out.size();
+    len = s.size() + 1; // ASCII count includes the NUL
+    appendBytes(out, reinterpret_cast<const uint8_t *>(s.c_str()), len);
+    padToEven(out);
+  };
+
+  if (!metadata.description.empty())
+    writeAsciiField(metadata.description, imageDescriptionOffset, imageDescriptionLen);
+  if (!metadata.make.empty()) writeAsciiField(metadata.make, makeOffset, makeLen);
+  if (!metadata.model.empty()) writeAsciiField(metadata.model, modelOffset, modelLen);
+  if (!metadata.dateTime.empty()) writeAsciiField(metadata.dateTime, dateTimeOffset, dateTimeLen);
+  if (!metadata.copyright.empty()) writeAsciiField(metadata.copyright, copyrightOffset, copyrightLen);
+
   // --- IFD ---
   const size_t ifdStart = out.size();
   {
@@ -152,14 +138,25 @@ bool writeTiffFile(const std::string &outPath, const uint8_t *rgb, int width, in
     out[ifdOffsetFieldPos + 3] = static_cast<uint8_t>((v >> 24) & 0xff);
   }
 
-  constexpr uint16_t kNumEntries = 16;
-  appendU16LE(out, kNumEntries);
+  const uint16_t numEntries = 16 + (!metadata.description.empty()) + (!metadata.make.empty()) +
+                               (!metadata.model.empty()) + (!metadata.dateTime.empty()) +
+                               (!metadata.copyright.empty());
+  appendU16LE(out, numEntries);
 
   writeIfdEntry(out, 256, kTypeLong, 1, static_cast<uint32_t>(width));           // ImageWidth
   writeIfdEntry(out, 257, kTypeLong, 1, static_cast<uint32_t>(height));          // ImageLength
   writeIfdEntry(out, 258, kTypeShort, 3, static_cast<uint32_t>(bitsPerSampleOffset)); // BitsPerSample
   writeIfdEntry(out, 259, kTypeShort, 1, 8);                                     // Compression = Adobe Deflate ("ZIP")
   writeIfdEntry(out, 262, kTypeShort, 1, 2);                                     // PhotometricInterpretation = RGB
+  if (!metadata.description.empty())
+    writeIfdEntry(out, 270, kTypeAscii, static_cast<uint32_t>(imageDescriptionLen),
+                  static_cast<uint32_t>(imageDescriptionOffset));               // ImageDescription
+  if (!metadata.make.empty())
+    writeIfdEntry(out, 271, kTypeAscii, static_cast<uint32_t>(makeLen),
+                  static_cast<uint32_t>(makeOffset));                          // Make
+  if (!metadata.model.empty())
+    writeIfdEntry(out, 272, kTypeAscii, static_cast<uint32_t>(modelLen),
+                  static_cast<uint32_t>(modelOffset));                         // Model
   writeIfdEntry(out, 273, kTypeLong, 1, static_cast<uint32_t>(stripOffset));     // StripOffsets
   writeIfdEntry(out, 277, kTypeShort, 1, 3);                                    // SamplesPerPixel
   writeIfdEntry(out, 278, kTypeLong, 1, static_cast<uint32_t>(height));          // RowsPerStrip (single strip)
@@ -170,7 +167,13 @@ bool writeTiffFile(const std::string &outPath, const uint8_t *rgb, int width, in
   writeIfdEntry(out, 296, kTypeShort, 1, 2);                                    // ResolutionUnit = inch
   writeIfdEntry(out, 305, kTypeAscii, static_cast<uint32_t>(softwareLen),
                 static_cast<uint32_t>(softwareOffset));                          // Software
+  if (!metadata.dateTime.empty())
+    writeIfdEntry(out, 306, kTypeAscii, static_cast<uint32_t>(dateTimeLen),
+                  static_cast<uint32_t>(dateTimeOffset));                      // DateTime
   writeIfdEntry(out, 317, kTypeShort, 1, 2);                                    // Predictor = horizontal differencing
+  if (!metadata.copyright.empty())
+    writeIfdEntry(out, 33432, kTypeAscii, static_cast<uint32_t>(copyrightLen),
+                  static_cast<uint32_t>(copyrightOffset));                     // Copyright
   writeIfdEntry(out, 34675, kTypeUndefined, static_cast<uint32_t>(kIccSRGBProfileLen),
                 static_cast<uint32_t>(iccOffset));                              // ICCProfile
 

@@ -18,14 +18,17 @@ const outBase = join(outDir, "pcd-codec");
 
 const sources = [
   join(nativeDir, "bridge.cpp"),
+  join(nativeDir, "image_metadata.cpp"),
   join(nativeDir, "jpeg_writer.cpp"),
   join(nativeDir, "tiff_writer.cpp"),
   join(vendorDir, "pcdDecode.cpp"),
 ];
 
 const headers = [
+  join(nativeDir, "image_metadata.h"),
   join(nativeDir, "jpeg_writer.h"),
   join(nativeDir, "tiff_writer.h"),
+  join(nativeDir, "tiff_bytes.h"),
   join(nativeDir, "icc_srgb.h"),
   join(vendorDir, "pcdDecode.h"),
 ];
